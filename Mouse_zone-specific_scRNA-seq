@@ -1,0 +1,270 @@
+#Mouse zone-specific single-cell RNA sequencing
+
+#install packages
+install.packages('Seurat')
+install.packages("pheatmap")
+install.packages("RColorBrewer")
+install.packages("ggplot2")
+install.packages("gplots")
+install.packages("calibrate")
+install.packages("maptools")
+install.packages("FactoMineR")
+install.packages("rgl")
+install.packages("caret")
+install.packages("BBmisc")
+install.packages("survival")
+install.packages("survminer")
+install.packages('tidyverse')
+install.packages("dplyr")
+install.packages("data.table")
+install.packages("reshape2")
+install.packages("beeswarm")
+install.packages("devtools")
+install.packages('cowplot')
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("Nebulosa")
+
+library(Seurat)
+library(Matrix)
+library(tidyverse)
+library(dplyr)
+library(Nebulosa)
+
+
+#Move the current directory to your convinient place (The authers use Desktop)
+#Load four data one by one
+#1_PV1 data
+matrix_dir.pv1 = "./RNAシークエンス解析/scRNAseq解析/F1821/PV1/filtered_feature_bc_matrix/" #This porocess depends on your setting 
+barcode.path.pv1 <- paste0(matrix_dir.pv1, "barcodes.tsv.gz")
+features.path.pv1 <- paste0(matrix_dir.pv1, "features.tsv")
+matrix.path.pv1 <- paste0(matrix_dir.pv1, "matrix.mtx")
+pv1.mat <- readMM(file = matrix.path.pv1)
+feature.names = read.delim(features.path.pv1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.pv1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.pv1 <- paste("PV1_Cell",1:length(barcode.names$V1))
+colnames(pv1.mat) = cellid.pv1
+rownames(pv1.mat) = feature.names$V2
+pv1 <- CreateSeuratObject(counts = pv1.mat, project = "PV_1", min.cells = 5)
+
+#2_PV3 data
+matrix_dir.pv3 = "./RNAシークエンス解析/scRNAseq解析/F1821/PV3/filtered_feature_bc_matrix/" #This porocess depends on your setting 
+barcode.path.pv3 <- paste0(matrix_dir.pv3, "barcodes.tsv.gz")
+features.path.pv3 <- paste0(matrix_dir.pv3, "features.tsv")
+matrix.path.pv3 <- paste0(matrix_dir.pv3, "matrix.mtx")
+pv3.mat <- readMM(file = matrix.path.pv3)
+feature.names = read.delim(features.path.pv3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.pv3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.pv3 <- paste("PV3_Cell",1:length(barcode.names$V1))
+colnames(pv3.mat) = cellid.pv3
+rownames(pv3.mat) = feature.names$V2
+pv3 <- CreateSeuratObject(counts = pv3.mat, project = "PV_3", min.cells = 5)
+
+#3_CV1 data
+matrix_dir.cv1 = "./RNAシークエンス解析/scRNAseq解析/F1821/CV1/filtered_feature_bc_matrix/" #This porocess depends on your setting 
+barcode.path.cv1 <- paste0(matrix_dir.cv1, "barcodes.tsv.gz")
+features.path.cv1 <- paste0(matrix_dir.cv1, "features.tsv")
+matrix.path.cv1 <- paste0(matrix_dir.cv1, "matrix.mtx")
+cv1.mat <- readMM(file = matrix.path.cv1)
+feature.names = read.delim(features.path.cv1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cv1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cv1 <- paste("CV1_Cell",1:length(barcode.names$V1))
+colnames(cv1.mat) = cellid.cv1
+rownames(cv1.mat) = feature.names$V2
+cv1 <- CreateSeuratObject(counts = cv1.mat, project = "CV_1", min.cells = 5)
+
+#4_CV3 data and 
+matrix_dir.cv3 = "./RNAシークエンス解析/scRNAseq解析/F1821/CV3/filtered_feature_bc_matrix/" #This porocess depends on your setting 
+barcode.path.cv3 <- paste0(matrix_dir.cv3, "barcodes.tsv.gz")
+features.path.cv3 <- paste0(matrix_dir.cv3, "features.tsv")
+matrix.path.cv3 <- paste0(matrix_dir.cv3, "matrix.mtx")
+cv3.mat <- readMM(file = matrix.path.cv3)
+feature.names = read.delim(features.path.cv3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cv3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cv3 <- paste("CV3_Cell",1:length(barcode.names$V1))
+colnames(cv3.mat) = cellid.cv3
+rownames(cv3.mat) = feature.names$V2
+cv3 <- CreateSeuratObject(counts = cv3.mat, project = "CV_3", min.cells = 5)
+
+
+#Make meta.data
+pv1@meta.data$area <- "PV"
+pv3@meta.data$area <- "PV"
+cv1@meta.data$area <- "CV"
+cv3@meta.data$area <- "CV"
+
+pv1@meta.data$set <- "Sample1"
+pv3@meta.data$set <- "Sample3"
+cv1@meta.data$set <- "Sample1"
+cv3@meta.data$set <- "Sample3"
+
+#Quality check
+pv1[["percent.mt"]] <- PercentageFeatureSet(pv1, pattern = "^mt-")
+pv3[["percent.mt"]] <- PercentageFeatureSet(pv3, pattern = "^mt-")
+cv1[["percent.mt"]] <- PercentageFeatureSet(cv1, pattern = "^mt-")
+cv3[["percent.mt"]] <- PercentageFeatureSet(cv3, pattern = "^mt-")
+
+#Visualize results of the quality check process
+v1 <- VlnPlot(pv1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+v2 <- VlnPlot(pv3, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+v3 <- VlnPlot(cv1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+v4 <- VlnPlot(cv3, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+v1
+v2
+v3
+v4
+
+#Select cells for subsequent analyses (Discard the low-quality cells)
+pv1 <- subset(pv1, subset = nFeature_RNA > 200 & nFeature_RNA < 5000) #& percent.mt < 50)
+pv3 <- subset(pv3, subset = nFeature_RNA > 200 & nFeature_RNA < 5000) #& percent.mt < 50)
+cv1 <- subset(cv1, subset = nFeature_RNA > 200 & nFeature_RNA < 5000) #& percent.mt < 50)
+cv3 <- subset(cv3, subset = nFeature_RNA > 200 & nFeature_RNA < 5000) #& percent.mt < 50)
+
+#Normalization
+pv1 <- NormalizeData(pv1, normalization.method = "LogNormalize", scale.factor = 10000)
+pv3 <- NormalizeData(pv3, normalization.method = "LogNormalize", scale.factor = 10000)
+cv1 <- NormalizeData(cv1, normalization.method = "LogNormalize", scale.factor = 10000)
+cv3 <- NormalizeData(cv3, normalization.method = "LogNormalize", scale.factor = 10000)
+
+#Identification of highly variable features (Feature selection)
+pv1 <- FindVariableFeatures(pv1, selection.method = "vst", nfeatures = 5000)
+pv3 <- FindVariableFeatures(pv3, selection.method = "vst", nfeatures = 5000)
+cv1 <- FindVariableFeatures(cv1, selection.method = "vst", nfeatures = 5000)
+cv3 <- FindVariableFeatures(cv3, selection.method = "vst", nfeatures = 5000)
+
+#Data integration
+all.list <- NULL
+all.list <- list(pv1, pv3, cv1, cv3)
+names(all.list) <- c("pv1","pv3","cv1","cv3")
+all.list 
+all.anchors <- FindIntegrationAnchors(object.list = all.list, dims = 1:30)
+all.integrated <- IntegrateData(anchorset = all.anchors, dims = 1:30)
+DefaultAssay(all.integrated) <- "integrated"
+
+#Clustering cells
+all.integrated <- ScaleData(all.integrated, verbose = FALSE)
+all.integrated <- RunPCA(all.integrated , npcs = 30, verbose = FALSE)
+ElbowPlot(all.integrated)
+all.integrated <- RunUMAP(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated <- RunTSNE(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated  <- FindNeighbors(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated  <- FindClusters(all.integrated , resolution = 0.42) #0.42
+
+#Visualization
+DimPlot(all.integrated , reduction = "tsne", label = T, label.size = 5, pt.size = 0.7)
+
+DefaultAssay(all.integrated) <- "RNA"
+#Find markers 
+markers <- FindAllMarkers(all.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top150.markers <- markers %>% 
+  group_by(cluster) %>%
+  slice_max(n = 150, order_by = avg_log2FC)
+write.csv(top150.markers, "./Mouse_Top150_DEGs_Raw.csv")
+
+#Confirm marker gene expression
+FeaturePlot(all.integrated.selected, features = c("Lyz2"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Myeloid cells
+FeaturePlot(all.integrated.selected, features = c("Itgam"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Myeloid cells (Monocyte, Neutrophil, macrophage)
+FeaturePlot(all.integrated.selected, features = c("Itgax"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Myeloid cells (Monocyte, DC, macrophage)
+
+FeaturePlot(all.integrated.selected, features = c("Clec4f"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Resident macrophages (Kupffer cells)
+FeaturePlot(all.integrated.selected, features = c("Marco"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Resident macrophages
+FeaturePlot(all.integrated.selected, features = c("Adgre1"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Macrophages
+FeaturePlot(all.integrated.selected, features = c("Cx3cr1"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Macrophage, Monocyte
+FeaturePlot(all.integrated.selected, features = c("Fcgr1"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Macrophage, Monocyte
+FeaturePlot(all.integrated.selected, features = c("Ly6c2"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Monocyte
+FeaturePlot(all.integrated.selected, features = c("Spn"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Patrolling monocyte
+
+FeaturePlot(all.integrated.selected, features = c("Cd3e"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #T cells
+FeaturePlot(all.integrated.selected, features = c("Cd4"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #CD4+T cells
+
+FeaturePlot(all.integrated.selected, features = c("Cd79a"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #B cells
+FeaturePlot(all.integrated.selected, features = c("Ighm"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #B cells
+FeaturePlot(all.integrated.selected, features = c("Jchain"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #B cells
+
+FeaturePlot(all.integrated.selected, features = c("S100a9"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Neutrophils
+
+FeaturePlot(all.integrated.selected, features = c("Xcl1"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #ILC1s or NKcells
+FeaturePlot(all.integrated.selected, features = c("Ncr1"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #ILC1s or NKcells
+
+FeaturePlot(all.integrated.selected, features = c("Klrb1c"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #NK or NKT cells
+FeaturePlot(all.integrated.selected, features = c("Cxcr6"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #NKT cells
+FeaturePlot(all.integrated.selected, features = c("Ifng"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #Activating NKT cells
+
+FeaturePlot(all.integrated.selected, features = c("Siglech"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #pDCs
+
+FeaturePlot(all.integrated.selected, features = c("Irf8"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #cDCs
+FeaturePlot(all.integrated.selected, features = c("Itgax"), reduction = "tsne", pt.size = 1, min.cutoff = 0) #cDCs
+
+#Omit unassigned cell clusters and assign each cluster to known cell types
+new.cluster.ids <- c("NKT", "MP2", "NK/ILC1", "cDC", "B", "NA", "Mono", "IFNg NKT", "CX3CR1 MP", "MP1", "pDC", "CD4T", "Neutro","NA")
+names(new.cluster.ids) <- levels(all.integrated)
+all.integrated <- RenameIdents(all.integrated, new.cluster.ids)
+all.integrated.selected <- subset(all.integrated, idents = c("NKT", "MP2", "NK/ILC1", "cDC", "B", "Mono", "IFNg NKT", "CX3CR1 MP", "MP1", "pDC", "CD4T", "Neutro"))
+DimPlot(all.integrated.selected, reduction = "tsne", label = TRUE, label.size = 5, pt.size = 1) + NoLegend()
+DimPlot(all.integrated.selected , reduction = "tsne", group.by = "area", shape.by="area" ,pt.size = 1.5, cols = c("#E68613","#00A9FF"))
+
+#Measure the numbers of each cell type based on the zonal location
+#MP_1
+MP1 <- subset(all.integrated.selected, idents = "MP1")
+table(MP1@meta.data$area)
+
+#MP_2
+MP2 <- subset(all.integrated.selected, idents = "MP2")
+table(MP2@meta.data$area)
+
+#Mono-MP
+Cx3cr1MP <- subset(all.integrated.selected, idents = "CX3CR1 MP")
+table(Cx3cr1MP@meta.data$area)
+
+#Mono
+Mono <- subset(all.integrated.selected, idents = "Mono")
+table(Mono@meta.data$area)
+
+#cDC
+cDC <- subset(all.integrated.selected, idents = "cDC")
+table(cDC@meta.data$area)
+
+#pDC
+pDC <- subset(all.integrated.selected, idents = "pDC")
+table(pDC@meta.data$area)
+
+#Neutro
+Neut <- subset(all.integrated.selected, idents = "Neutro")
+table(Neut@meta.data$area)
+
+#NK/ILC1 CD4T
+NK <- subset(all.integrated.selected, idents = "NK/ILC1")
+table(NK@meta.data$area)
+
+#NKT
+NKT <- subset(all.integrated.selected, idents = "NKT")
+table(NKT@meta.data$area)
+
+#Activating NKT
+ActNKT <- subset(all.integrated.selected, idents = "IFNg NKT")
+table(ActNKT@meta.data$area)
+
+#CD4T
+CD4T <- subset(all.integrated.selected, idents = "CD4T")
+table(CD4T@meta.data$area)
+
+#B
+B <- subset(all.integrated, idents = "B")
+table(B@meta.data$area)
