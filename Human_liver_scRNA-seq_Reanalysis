@@ -1,0 +1,408 @@
+#Reanalysis of human single-cell RNA sequencing (P Ramachandran, et al, Nature, 2018.)
+
+#install packages
+install.packages('Seurat')
+library(Seurat)
+library(Matrix)
+install.packages("pheatmap")
+install.packages("RColorBrewer")
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("gplots")
+install.packages("calibrate")
+install.packages("maptools")
+install.packages("FactoMineR")
+install.packages("rgl")
+install.packages("caret")
+install.packages("BBmisc")
+install.packages("survival")
+install.packages("survminer")
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("dplyr")
+library(dplyr)
+install.packages("data.table")
+install.packages("reshape2")
+install.packages("beeswarm")
+install.packages("devtools")
+library(devtools)
+install.packages('cowplot')
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("Nebulosa")
+library(Nebulosa)
+
+
+#Move the current directory to your convinient place (The authers use Desktop)
+#Load four data one by one
+#Load sample1 data
+matrix_dir.sample1 = "./Human Liver scRNA-seq/healthy/" #This path depends on your environment
+barcode.path.sample1 <- paste0(matrix_dir.sample1, "GSM4041150_healthy1_cd45+_barcodes.tsv")
+features.path.sample1 <- paste0(matrix_dir.sample1, "GSM4041150_healthy1_cd45+_genes.tsv")
+matrix.path.sample1 <- paste0(matrix_dir.sample1, "GSM4041150_healthy1_cd45+_matrix.mtx")
+sample1.mat <- readMM(file = matrix.path.sample1)
+feature.names = read.delim(features.path.sample1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.sample1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.sample1 <- paste("sample1_Cell",1:length(barcode.names$V1))
+colnames(sample1.mat) = cellid.sample1
+rownames(sample1.mat) = feature.names$V2
+sample1 <- CreateSeuratObject(counts = sample1.mat, project = "Healthy_1", min.cells = 5)
+
+#Load sample2 data
+matrix_dir.sample2 = "./Human Liver scRNA-seq/healthy/" #This path depends on your environment
+barcode.path.sample2 <- paste0(matrix_dir.sample2, "GSM4041153_healthy2_cd45+_barcodes.tsv")
+features.path.sample2 <- paste0(matrix_dir.sample2, "GSM4041153_healthy2_cd45+_genes.tsv")
+matrix.path.sample2 <- paste0(matrix_dir.sample2, "GSM4041153_healthy2_cd45+_matrix.mtx")
+sample2.mat <- readMM(file = matrix.path.sample2)
+feature.names = read.delim(features.path.sample2, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.sample2, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.sample2 <- paste("sample2_Cell",1:length(barcode.names$V1))
+colnames(sample2.mat) = cellid.sample2
+rownames(sample2.mat) = feature.names$V2
+sample2 <- CreateSeuratObject(counts = sample2.mat, project = "Healthy_2", min.cells = 5)
+
+#Load sample3 data
+matrix_dir.sample3 = "./Human Liver scRNA-seq/healthy/" #This path depends on your environment
+barcode.path.sample3 <- paste0(matrix_dir.sample3, "GSM4041155_healthy3_cd45+_barcodes.tsv")
+features.path.sample3 <- paste0(matrix_dir.sample3, "GSM4041155_healthy3_cd45+_genes.tsv")
+matrix.path.sample3 <- paste0(matrix_dir.sample3, "GSM4041155_healthy3_cd45+_matrix.mtx")
+sample3.mat <- readMM(file = matrix.path.sample3)
+feature.names = read.delim(features.path.sample3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.sample3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.sample3 <- paste("sample3_Cell",1:length(barcode.names$V1))
+colnames(sample3.mat) = cellid.sample3
+rownames(sample3.mat) = feature.names$V2
+sample3 <- CreateSeuratObject(counts = sample3.mat, project = "Healthy_3", min.cells = 5)
+
+#Load sample4 data
+matrix_dir.sample4 = "./Human Liver scRNA-seq/healthy/" #This path depends on your environment
+barcode.path.sample4 <- paste0(matrix_dir.sample4, "GSM4041160_healthy5_cd45+_barcodes.tsv")
+features.path.sample4 <- paste0(matrix_dir.sample4, "GSM4041160_healthy5_cd45+_genes.tsv")
+matrix.path.sample4 <- paste0(matrix_dir.sample4, "GSM4041160_healthy5_cd45+_matrix.mtx")
+sample4.mat <- readMM(file = matrix.path.sample4)
+feature.names = read.delim(features.path.sample4, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.sample4, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.sample4 <- paste("sample4_Cell",1:length(barcode.names$V1))
+colnames(sample4.mat) = cellid.sample4
+rownames(sample4.mat) = feature.names$V2
+sample4 <- CreateSeuratObject(counts = sample4.mat, project = "Healthy_4", min.cells = 5)
+
+#Load sample1 data (Cirrhosis)
+matrix_dir.cirrhosis.sample1 = "./Human Liver scRNA-seq/cirrhosis/" #This path depends on your environment
+barcode.path.cirrhosis.sample1 <- paste0(matrix_dir.cirrhosis.sample1, "GSM4041161_cirrhotic1_cd45+_barcodes.tsv")
+features.path.cirrhosis.sample1 <- paste0(matrix_dir.cirrhosis.sample1, "GSM4041161_cirrhotic1_cd45+_genes.tsv")
+matrix.path.cirrhosis.sample1 <- paste0(matrix_dir.cirrhosis.sample1, "GSM4041161_cirrhotic1_cd45+_matrix.mtx")
+cirrhosis.sample1.mat <- readMM(file = matrix.path.cirrhosis.sample1)
+feature.names = read.delim(features.path.cirrhosis.sample1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cirrhosis.sample1, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cirrhosis.sample1 <- paste("cirrhosis_sample1_Cell",1:length(barcode.names$V1))
+colnames(cirrhosis.sample1.mat) = cellid.cirrhosis.sample1
+rownames(cirrhosis.sample1.mat) = feature.names$V2
+cirrhosis.sample1 <- CreateSeuratObject(counts = cirrhosis.sample1.mat, project = "Cirrhosis_1", min.cells = 5)
+
+#Load sample2 data (Cirrhosis)
+matrix_dir.cirrhosis.sample2 = "./Human Liver scRNA-seq/cirrhosis/" #This path depends on your environment
+barcode.path.cirrhosis.sample2 <- paste0(matrix_dir.cirrhosis.sample2, "GSM4041166_cirrhotic3_cd45+_barcodes.tsv")
+features.path.cirrhosis.sample2 <- paste0(matrix_dir.cirrhosis.sample2, "GSM4041166_cirrhotic3_cd45+_genes.tsv")
+matrix.path.cirrhosis.sample2 <- paste0(matrix_dir.cirrhosis.sample2, "GSM4041166_cirrhotic3_cd45+_matrix.mtx")
+cirrhosis.sample2.mat <- readMM(file = matrix.path.cirrhosis.sample2)
+feature.names = read.delim(features.path.cirrhosis.sample2, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cirrhosis.sample2, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cirrhosis.sample2 <- paste("cirrhosis_sample2_Cell",1:length(barcode.names$V1))
+colnames(cirrhosis.sample2.mat) = cellid.cirrhosis.sample2
+rownames(cirrhosis.sample2.mat) = feature.names$V2
+cirrhosis.sample2 <- CreateSeuratObject(counts = cirrhosis.sample2.mat, project = "Cirrhosis_2", min.cells = 5)
+
+#Load sample3 data (Cirrhosis)
+matrix_dir.cirrhosis.sample3 = "./Human Liver scRNA-seq/cirrhosis/" #This path depends on your environment
+barcode.path.cirrhosis.sample3 <- paste0(matrix_dir.cirrhosis.sample3, "GSM4041168_cirrhotic4_cd45+_barcodes.tsv")
+features.path.cirrhosis.sample3 <- paste0(matrix_dir.cirrhosis.sample3, "GSM4041168_cirrhotic4_cd45+_genes.tsv")
+matrix.path.cirrhosis.sample3 <- paste0(matrix_dir.cirrhosis.sample3, "GSM4041168_cirrhotic4_cd45+_matrix.mtx")
+cirrhosis.sample3.mat <- readMM(file = matrix.path.cirrhosis.sample3)
+feature.names = read.delim(features.path.cirrhosis.sample3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cirrhosis.sample3, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cirrhosis.sample3 <- paste("cirrhosis_sample3_Cell",1:length(barcode.names$V1))
+colnames(cirrhosis.sample3.mat) = cellid.cirrhosis.sample3
+rownames(cirrhosis.sample3.mat) = feature.names$V2
+cirrhosis.sample3 <- CreateSeuratObject(counts = cirrhosis.sample3.mat, project = "Cirrhosis_3", min.cells = 5)
+
+#Load sample4 data (Cirrhosis)
+matrix_dir.cirrhosis.sample4 = "./Human Liver scRNA-seq/cirrhosis/" #This path depends on your environment
+barcode.path.cirrhosis.sample4 <- paste0(matrix_dir.cirrhosis.sample4, "GSM4041169_cirrhotic5_cd45+_barcodes.tsv")
+features.path.cirrhosis.sample4 <- paste0(matrix_dir.cirrhosis.sample4, "GSM4041169_cirrhotic5_cd45+_genes.tsv")
+matrix.path.cirrhosis.sample4 <- paste0(matrix_dir.cirrhosis.sample4, "GSM4041169_cirrhotic5_cd45+_matrix.mtx")
+cirrhosis.sample4.mat <- readMM(file = matrix.path.cirrhosis.sample4)
+feature.names = read.delim(features.path.cirrhosis.sample4, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+barcode.names = read.delim(barcode.path.cirrhosis.sample4, 
+                           header = FALSE,
+                           stringsAsFactors = FALSE)
+cellid.cirrhosis.sample4 <- paste("cirrhosis_sample4_Cell",1:length(barcode.names$V1))
+colnames(cirrhosis.sample4.mat) = cellid.cirrhosis.sample4
+rownames(cirrhosis.sample4.mat) = feature.names$V2
+cirrhosis.sample4 <- CreateSeuratObject(counts = cirrhosis.sample4.mat, project = "Cirrhosis_4", min.cells = 5)
+
+
+#Make meta.data
+sample1@meta.data$condition <- "Healthy"
+sample2@meta.data$condition <- "Healthy"
+sample3@meta.data$condition <- "Healthy"
+sample4@meta.data$condition <- "Healthy"
+
+cirrhosis.sample1@meta.data$condition <- "Cirrhotic"
+cirrhosis.sample2@meta.data$condition <- "Cirrhotic"
+cirrhosis.sample3@meta.data$condition <- "Cirrhotic"
+cirrhosis.sample4@meta.data$condition <- "Cirrhotic"
+
+sample1@meta.data$patient <- "Healthy1"
+sample2@meta.data$patient <- "Healthy2"
+sample3@meta.data$patient <- "Healthy3"
+sample4@meta.data$patient <- "Healthy4"
+
+cirrhosis.sample1@meta.data$patient <- "Cirrhotic1"
+cirrhosis.sample2@meta.data$patient <- "Cirrhotic2"
+cirrhosis.sample3@meta.data$patient <- "Cirrhotic3"
+cirrhosis.sample4@meta.data$patient <- "Cirrhotic4"
+
+#Quality check and Normalize data
+sample1[["percent.mt"]] <- PercentageFeatureSet(sample1, pattern = "^MT-")
+sample2[["percent.mt"]] <- PercentageFeatureSet(sample2, pattern = "^MT-")
+sample3[["percent.mt"]] <- PercentageFeatureSet(sample3, pattern = "^MT-")
+sample4[["percent.mt"]] <- PercentageFeatureSet(sample4, pattern = "^MT-")
+
+cirrhosis.sample1[["percent.mt"]] <- PercentageFeatureSet(cirrhosis.sample1, pattern = "^MT-")
+cirrhosis.sample2[["percent.mt"]] <- PercentageFeatureSet(cirrhosis.sample2, pattern = "^MT-")
+cirrhosis.sample3[["percent.mt"]] <- PercentageFeatureSet(cirrhosis.sample3, pattern = "^MT-")
+cirrhosis.sample4[["percent.mt"]] <- PercentageFeatureSet(cirrhosis.sample4, pattern = "^MT-")
+
+VlnPlot(sample1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(sample2, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(sample3, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(sample4, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+VlnPlot(cirrhosis.sample1, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(cirrhosis.sample2, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(cirrhosis.sample3, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+VlnPlot(cirrhosis.sample4, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+sample1 <- subset(sample1, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+sample2 <- subset(sample2, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+sample3 <- subset(sample3, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+sample4 <- subset(sample4, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+
+cirrhosis.sample1 <- subset(cirrhosis.sample1, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+cirrhosis.sample2 <- subset(cirrhosis.sample2, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+cirrhosis.sample3 <- subset(cirrhosis.sample3, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+cirrhosis.sample4 <- subset(cirrhosis.sample4, subset = nFeature_RNA > 300 & nFeature_RNA < 4000 & percent.mt < 30)
+
+sample1 <- NormalizeData(sample1, normalization.method = "LogNormalize", scale.factor = 10000)
+sample2 <- NormalizeData(sample2, normalization.method = "LogNormalize", scale.factor = 10000)
+sample3 <- NormalizeData(sample3, normalization.method = "LogNormalize", scale.factor = 10000)
+sample4 <- NormalizeData(sample4, normalization.method = "LogNormalize", scale.factor = 10000)
+
+cirrhosis.sample1 <- NormalizeData(cirrhosis.sample1, normalization.method = "LogNormalize", scale.factor = 10000)
+cirrhosis.sample2 <- NormalizeData(cirrhosis.sample2, normalization.method = "LogNormalize", scale.factor = 10000)
+cirrhosis.sample3 <- NormalizeData(cirrhosis.sample3, normalization.method = "LogNormalize", scale.factor = 10000)
+cirrhosis.sample4 <- NormalizeData(cirrhosis.sample4, normalization.method = "LogNormalize", scale.factor = 10000)
+
+#Feature selection
+sample1 <- FindVariableFeatures(sample1, selection.method = "vst", nfeatures = 4000)
+sample2 <- FindVariableFeatures(sample2, selection.method = "vst", nfeatures = 4000)
+sample3 <- FindVariableFeatures(sample3, selection.method = "vst", nfeatures = 4000)
+sample4 <- FindVariableFeatures(sample4, selection.method = "vst", nfeatures = 4000)
+
+cirrhosis.sample1 <- FindVariableFeatures(cirrhosis.sample1, selection.method = "vst", nfeatures = 4000)
+cirrhosis.sample2 <- FindVariableFeatures(cirrhosis.sample2, selection.method = "vst", nfeatures = 4000)
+cirrhosis.sample3 <- FindVariableFeatures(cirrhosis.sample3, selection.method = "vst", nfeatures = 4000)
+cirrhosis.sample4 <- FindVariableFeatures(cirrhosis.sample4, selection.method = "vst", nfeatures = 4000)
+
+#Integrate datasets
+all.list <- NULL
+all.list <- list(sample1, sample2, sample3, sample4, cirrhosis.sample1,cirrhosis.sample2, cirrhosis.sample3, cirrhosis.sample4)
+names(all.list) <- c("sample1", "sample2", "sample3", "sample4", "cirrosis.sample1", "cirrosis.sample2","cirrosis.sample3","cirrosis.sample4")
+all.list 
+features <- SelectIntegrationFeatures(object.list = all.list)
+all.list <- lapply(X = all.list, FUN = function(x) {
+  x <- ScaleData(x, features = features, verbose = FALSE)
+  x <- RunPCA(x, features = features, verbose = FALSE)
+})
+all.anchors <- FindIntegrationAnchors(object.list = all.list, anchor.features = features ,reduction = "rpca")
+all.integrated <- IntegrateData(anchorset = all.anchors)
+DefaultAssay(all.integrated) <- "integrated"
+
+#Clustring and visualization
+all.integrated <- ScaleData(all.integrated, verbose = FALSE)
+all.integrated <- RunPCA(all.integrated , npcs = 30, verbose = FALSE)
+ElbowPlot(all.integrated)
+all.integrated <- RunUMAP(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated <- RunTSNE(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated  <- FindNeighbors(all.integrated , reduction = "pca", dims = 1:15)
+all.integrated  <- FindClusters(all.integrated , resolution = 0.2)
+
+DimPlot(all.integrated , reduction = "tsne", label = T, label.size = 6, pt.size = 0.1)#8)
+DimPlot(all.integrated , reduction = "tsne", group.by = "patient", split.by = "patient", pt.size = 0.8)
+DimPlot(all.integrated , reduction = "tsne", group.by = "condition", split.by = "condition", pt.size = 0.1)
+
+
+#Find markers in each cluster
+DefaultAssay(all.integrated) <- "RNA"
+markers <- FindAllMarkers(all.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top100.markers <- markers %>% 
+  group_by(cluster) %>%
+  slice_max(n = 100, order_by = avg_log2FC)
+write.csv(top100.markers, "./Human_Liver_markers_top100.csv")
+
+
+#Confirm gene expression
+#Characterize each cluster
+
+#macrophage markers
+FeaturePlot(all.integrated, features = c("CD68"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("HLA-DRA"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CD14"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CSF1R"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+
+#macrophage subtype markers
+FeaturePlot(all.integrated, features = c("MARCO"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("MSR1"), reduction = "tsne", pt.size = 0.5)
+FeaturePlot(all.integrated, features = c("CD163"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("TIMD4"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CX3CR1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CCR2"), reduction = "tsne", pt.size = 0.5)
+FeaturePlot(all.integrated, features = c("HMOX1"), reduction = "tsne", pt.size = 0.5)
+
+#T cells
+FeaturePlot(all.integrated, features = c("CD3E"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CD4"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+
+#NK and NKT cells
+FeaturePlot(all.integrated, features = c("CXCR6"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("KLRF1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("NKG2D"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+
+#B cells
+FeaturePlot(all.integrated, features = c("CD19"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("MS4A1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("CD79A"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+
+
+#NK cells
+FeaturePlot(all.integrated, features = c("NCR1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("KLRF1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+FeaturePlot(all.integrated, features = c("KLRC1"), reduction = "tsne", pt.size = 0.5, min.cutoff = 0)
+
+
+#Omit unassigned cell clusters
+all.integrated.selected <- subset(all.integrated, idents = c("0", "1", "2", "3", "4", "5", "6","8","11"))
+DimPlot(all.integrated.selected, reduction = "tsne", label = TRUE, label.size = 0, pt.size = 0.5) + NoLegend()
+
+
+#Identify Marco-expressing Kupffer cells: MP2 in human samples
+plot_density(all.integrated.selected, "CD68")
+plot_density(all.integrated.selected, "CSF1R")
+plot_density(all.integrated.selected, "CD14")
+
+plot_density(all.integrated.selected, "IL10")
+plot_density(all.integrated.selected, "MARCO")
+
+
+#extract macrophage subsets
+Mac1 <- subset(all.integrated.selected, idents = "8") #MARCO positive
+table(Mac1@meta.data$patient)
+
+Mac2 <- subset(all.integrated.selected, idents = "3") #MARCO negative
+table(Mac2@meta.data$patient)
+
+Mac3 <- subset(all.integrated.selected, idents = "4") #MARCO negative
+table(Mac3@meta.data$patient)
+
+#Calculate the percentage of MARCO-positive macrophages in total macrophages
+#Healthy
+#patient1
+#111/(111+101+570)*100, 14.19437(% in macrophage)
+
+#patient2
+#238/(238+306+405)*100, 25.07903(%)
+
+#patient3
+#68/(68+255+210)*100, 12.75797(%)
+
+#patient4
+#243/(243+636+499)*100, 17.63425(%)
+  
+#Healthy Average: 14.85921
+
+
+#Cirrhotic
+#patient1
+#14/(14+238+111)*100, 3.856749(%)
+
+#patient2
+#25/(25+147+202)*100,  6.684492(%)
+
+#patient3
+#96/(96+368+448)*100, 10.52632(%)
+
+#patient4
+#39/(39+262+265)*100, 6.890459(%)
+
+#Cirrhosis Average: 8.44361
+
+library(dplyr) 
+library(ggplot2)
+install.packages("ggpubr")
+library(ggpubr)
+
+#creat dataframe
+Healthy <-c(14.19437, 25.07903, 12.75797,  17.63425)
+Cirrhotic <-c(3.856749, 6.684492, 10.52632, 6.890459)
+
+Healthy.label<-rep("Healthy",4)
+Cirrhotic.label<-rep("Cirrhotic",4)
+condition.label<-c(Healthy.label,Cirrhotic.label)
+
+df <- as.data.frame(matrix(0,8,2))
+colnames(df)<-c("Condition","Percentage")
+df[,1] <- as.factor(condition.label)
+df[,2] <- as.numeric(c(Healthy, Cirrhotic))
+
+df2 <- transform(df, Condition = factor(Condition, levels = c("Healthy","Cirrhotic")))
+
+#Visualize the comparison between healthy and cirrhotic
+ggboxplot(df2, x = "Condition", y = "Percentage", color = "Condition", shape = "Condition", palette = c("#00BFC4","#F8766D"),
+          size = 1, #箱ひげ図のラインの太さ,
+          ylim = c(0,30),
+          add = "jitter", add.params = list(size = 3)) + stat_summary(fun="mean", geom="point", shape=8, size=6, col="black") 
+
+#Statistics
+wilcox.test(x=Healthy, y=Cirrhotic, paired = F)
